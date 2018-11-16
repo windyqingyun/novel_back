@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.bus.dao.FodderDao">
+    
+	<sql id="fodderColumns">
+		a.id AS "id",
+		a.title AS "title",
+		a.title_image AS "titleImage",
+		a.content AS "content",
+		a.link_url AS "linkUrl",
+		a.book_id AS "book.id",
+		a.chapter AS "chapter",
+		a.office_id AS "office.id",
+		a.viewcount AS "viewcount",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		book.name AS "book.name",
+		book.author AS "book.author",
+		office.name AS "office.name",
+		nod.file_name AS "titleImageArchive.fileName",
+		nod.extension AS "titleImageArchive.extension",
+		nod.id AS "titleImageArchive.id"
+	</sql>
+	
+	<sql id="fodderJoins">
+		LEFT JOIN book book ON book.id = a.book_id
+		LEFT JOIN sys_office office ON office.id = a.office_id
+		left join nod_archive nod on nod.id = a.title_image
+	</sql>
+	
+    <resultMap type="Fodder" id="FodderResult" autoMapping="true">
+    	<result column="content" property="content"   typeHandler="com.jeeplus.common.mapper.ConvertBlobTypeHandler"/>
+    </resultMap>
+    
+	<select id="get" resultMap="FodderResult" >
+		SELECT 
+			<include refid="fodderColumns"/>
+		FROM fodder a
+		<include refid="fodderJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultMap="FodderResult" >
+		SELECT 
+			<include refid="fodderColumns"/>
+		FROM fodder a
+		<include refid="fodderJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="title != null and title != ''">
+				AND a.title LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{title},'%')</if>
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultMap="FodderResult" >
+		SELECT 
+			<include refid="fodderColumns"/>
+		FROM fodder a
+		<include refid="fodderJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${sqlMap.dsf}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO fodder(
+			id,
+			title,
+			title_image,
+			content,
+			link_url,
+			book_id,
+			chapter,
+			office_id,
+			viewcount,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{title},
+			#{titleImage},
+			#{content},
+			#{linkUrl},
+			#{book.id},
+			#{chapter},
+			#{office.id},
+			#{viewcount},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE fodder SET 	
+			title = #{title},
+			title_image = #{titleImage},
+			content = #{content},
+			link_url = #{linkUrl},
+			book_id = #{book.id},
+			chapter = #{chapter},
+			office_id = #{office.id},
+			viewcount = #{viewcount},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM fodder
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE fodder SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Fodder" statementType="STATEMENT">
+		select * FROM fodder  where ${propertyName} = '${value}'
+	</select>
+	
+	<select id="findListBybook" resultType="Book">
+		SELECT 
+			a.id AS "id",
+			a.name AS "name",
+			a.author AS "author",
+			a.original_id AS "originalId"
+		FROM book a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="author != null and author != ''">
+				AND a.author LIKE 
+					<if test="dbName == 'oracle'">'%'||#{author}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{author}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{author},'%')</if>
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

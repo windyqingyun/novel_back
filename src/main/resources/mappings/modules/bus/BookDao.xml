@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.bus.dao.BookDao">
+    
+	<sql id="bookColumns">
+		a.`id` AS "id",
+		a.`name` AS "name",
+		a.`title` AS "title",
+		a.`condition` AS "condition",
+		a.`author` AS "author",
+		a.`image` AS "image",
+		a.`tags` AS "tags",
+		a.`office_id` AS "office.id",
+		a.`original_id` AS "originalId",
+		a.`publish_date` AS "publishDate",
+		a.`viewcount` AS "viewcount",
+		a.`create_by` AS "createBy.id",
+		a.`create_date` AS "createDate",
+		a.`update_by` AS "updateBy.id",
+		a.`update_date` AS "updateDate",
+		a.`remarks` AS "remarks",
+		a.`del_flag` AS "delFlag",
+		`office`.`name` AS "office.name"
+	</sql>
+	
+	<sql id="bookJoins">
+		LEFT JOIN sys_office office ON office.id = a.office_id
+	</sql>
+	
+    
+	<select id="get" resultType="Book" >
+		SELECT 
+			<include refid="bookColumns"/>
+		FROM book a
+		<include refid="bookJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="Book" >
+		SELECT 
+			<include refid="bookColumns"/>
+		FROM book a
+		<include refid="bookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+			<if test="name != null and name != ''">
+				AND a.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+			</if>
+			<if test="title != null and title != ''">
+				AND a.title LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{title},'%')</if>
+			</if>
+			<if test="author != null and author != ''">
+				AND a.author = #{author}
+			</if>
+			<if test="condition != null">
+				AND a.author = #{author}
+			</if>
+			<if test="tags != null and tags != ''">
+				AND a.tags = #{tags}
+			</if>
+			<if test="originalId != null and originalId != ''">
+				AND a.original_id = #{originalId}
+			</if>
+			<if test="publishDate != null and publishDate != ''">
+				AND a.publish_date = #{publishDate}
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Book" >
+		SELECT 
+			<include refid="bookColumns"/>
+		FROM book a
+		<include refid="bookJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${sqlMap.dsf}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO book(
+			id,
+			name,
+			title,
+			`condition`,
+			author,
+			image,
+			tags,
+			office_id,
+			original_id,
+			publish_date,
+			viewcount,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{name},
+			#{title},
+			#{condition},
+			#{author},
+			#{image},
+			#{tags},
+			#{office.id},
+			#{originalId},
+			#{publishDate},
+			#{viewcount},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE book SET 	
+			name = #{name},
+			title = #{title},
+			`condition` = #{condition},
+			author = #{author},
+			image = #{image},
+			tags = #{tags},
+			office_id = #{office.id},
+			original_id = #{originalId},
+			publish_date = #{publishDate},
+			viewcount = #{viewcount},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM book
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE book SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Book" statementType="STATEMENT">
+		select * FROM book  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

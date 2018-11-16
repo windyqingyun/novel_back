@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.bus.dao.PaymentBillDao">
+    
+	<sql id="paymentBillColumns">
+		a.id AS "id",
+		a.user_id AS "user.id",
+		a.price AS "price",
+		a.pay_channel AS "payChannel",
+		a.office_id AS "office.id",
+		a.result_coin AS "resultCoin",
+		a.result_ticket AS "resultTicket",
+		a.pay_date AS "payDate",
+		a.success_date AS "successDate",
+		a.issuccess AS "issuccess",
+		a.error_msg AS "errorMsg",
+		a.create_date AS "createDate",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		user.name AS "user.name",
+		office.name AS "office.name",
+		uo.name as "user.office.name",
+		user.office_id as "user.office.id"
+	</sql>
+	
+	<sql id="paymentBillJoins">
+		LEFT JOIN sys_user user ON user.id = a.user_id
+		left join sys_office uo on uo.id = user.office_id
+		LEFT JOIN sys_office office ON office.id = a.office_id
+	</sql>
+	
+    
+	<select id="get" resultType="PaymentBill" >
+		SELECT 
+			<include refid="paymentBillColumns"/>
+		FROM payment_bill a
+		<include refid="paymentBillJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	
+	<!-- 根据各自的officeid 查询总收入(已废弃) -->
+	<select id="getSumRevenue" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select SUM(a.price) as "sumRevenue"
+			from payment_bill a where a.del_flag = '0' and a.issuccess = '1'
+			<if test="beginDate != null">
+				<![CDATA[ AND a.success_date >= #{beginDate} ]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[ AND a.success_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+			</if>
+	</select>
+	
+	
+	<!-- 总收入 -->
+	<select id="getSumRevenuePlus" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select 
+			SUM(a.price) as "sumRevenue"
+		FROM 
+			payment_bill a  
+			<where>
+				and a.del_flag = '0' 
+				and a.issuccess = '1' 
+				<if test="channelOffice != null and channelOffice.id != null and channelOffice.id != ''">
+					and a.pay_origin = #{channelOffice.id} 
+				</if>
+				<if test="office != null and office.id != null and office.id != ''">
+					and a.office_id = #{office.id}
+				</if>
+				<if test="originOffice != null and originOffice.id != null and originOffice.id != ''">
+					and a.pay_origin = #{originOffice.id} 
+				</if>
+				<if test="providerOffice != null and providerOffice.id != null and providerOffice.id != ''">
+					and a.office_id = #{providerOffice.id}
+				</if>
+				<if test="beginDate != null">
+					<![CDATA[ AND a.success_date >= #{beginDate} ]]>
+				</if>
+				<if test="endDate != null">
+					<![CDATA[ AND a.success_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+				</if>
+			</where>
+	</select>
+	
+	
+	<!-- 内容提供端收入(已废弃) -->
+	<select id="countRevenueBySupply" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select 
+			 sum(a.price) as "sumRevenue",
+			 a.office_id as "office.id",
+			 o.name as "office.name"
+		 from payment_bill a  left join sys_office o on o.id = a.office_id 
+		where a.del_flag = '0' and a.issuccess = '1' 
+			<if test="office != null and office.id != null and office.id != ''">
+				and a.office_id = #{office.id}
+			</if>
+			<if test="beginDate != null">
+				<![CDATA[ AND a.success_date >= #{beginDate} ]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[ AND a.success_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+			</if>
+		GROUP BY a.office_id
+	</select>
+	
+	
+	<!-- 内容提供端 -->
+	<select id="countRevenueBySupplyPlus" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select 
+			 sum(a.price) as "sumRevenue",
+			 o.id as "office.id",
+			 o.name as "office.name"
+		FROM 
+			payment_bill a
+			left join sys_office o on o.id = a.office_id 
+		<where>
+			LENGTH(trim(a.office_id)) > 0
+			AND a.del_flag = '0'
+			AND a.issuccess = '1' 
+			<if test="channelOffice != null and channelOffice.id != null and channelOffice.id != ''">
+				and a.pay_origin = #{channelOffice.id} 
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				and a.office_id = #{office.id}
+			</if>
+			<if test="originOffice != null and originOffice.id != null and originOffice.id != ''">
+				and a.pay_origin = #{originOffice.id} 
+			</if>
+			<if test="providerOffice != null and providerOffice.id != null and providerOffice.id != ''">
+				and a.office_id = #{providerOffice.id}
+			</if>
+			<if test="beginDate != null">
+				<![CDATA[ AND a.success_date >= #{beginDate} ]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[ AND a.success_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+			</if>
+		</where>
+		GROUP BY a.office_id
+	</select>
+	
+	
+	<!-- 流量端收入(已废弃) -->
+	<select id="coutRevenueByChannel" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select 
+ 			 sum(a.price) as "sumRevenue",
+			 user.office_id as "channelOffice.id",
+			 o.name as "channelOffice.name"
+		 from payment_bill a  
+			left join sys_user user on user.id = a.user_id
+		 	left join sys_office o on o.id = user.office_id 
+			where 
+				a.del_flag = '0' and a.issuccess = '1' 
+			<if test="channelOffice != null and channelOffice.id != null and channelOffice.id != ''">
+				and a.pay_origin = #{channelOffice.id} 
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				and a.office_id = #{office.id}
+			</if>
+			<if test="beginDate != null">
+				<![CDATA[ AND a.success_date >= #{beginDate} ]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[ AND a.success_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+			</if>
+		GROUP BY user.office_id
+	</select>
+	
+	
+	<!-- 各渠道 -->
+	<select id="countRevenueByChannelPlus" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		SELECT
+			sum( a.price ) AS "sumRevenue",
+			o.id AS "channelOffice.id",
+			o.NAME AS "channelOffice.name" 
+		FROM
+			payment_bill a 
+			LEFT JOIN sys_office o ON o.id = a.pay_origin 
+		<where>
+			LENGTH(trim(a.pay_origin)) > 0
+			AND a.del_flag = '0' 
+			AND a.issuccess = '1' 
+			<if test="channelOffice != null and channelOffice.id != null and channelOffice.id != ''">
+				and a.pay_origin = #{channelOffice.id} 
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				and a.office_id = #{office.id}
+			</if>
+			<if test="originOffice != null and originOffice.id != null and originOffice.id != ''">
+				and a.pay_origin = #{originOffice.id} 
+			</if>
+			<if test="providerOffice != null and providerOffice.id != null and providerOffice.id != ''">
+				and a.office_id = #{providerOffice.id}
+			</if>
+			<if test="beginDate != null">
+				<![CDATA[ AND a.success_date >= #{beginDate} ]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[ AND a.success_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+			</if>
+		</where>
+		GROUP BY a.pay_origin
+	</select>
+	
+	
+	<select id="findList" resultType="PaymentBill" >
+		SELECT 
+			<include refid="paymentBillColumns"/>
+		FROM payment_bill a
+		<include refid="paymentBillJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="user != null and user.id != null and user.id != ''">
+				AND a.user_id = #{user.id}
+			</if>
+			<if test="payChannel != null and payChannel != ''">
+				AND a.pay_channel = #{payChannel}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+			<if test="beginPayDate != null">
+				<![CDATA[ AND a.pay_date >= #{beginPayDate} ]]>
+			</if>
+			<if test="endPayDate != null">
+				<![CDATA[ AND a.pay_date < DATE_ADD(#{endPayDate},INTERVAL 1 DAY)  ]]>
+			</if>
+			<if test="issuccess != null and issuccess != ''">
+				AND a.issuccess = #{issuccess}
+			</if>
+			<if test="user != null and user.office != null and user.office.id != null and user.office.id != ''">
+				and user.office_id = #{user.office.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="PaymentBill" >
+		SELECT 
+			<include refid="paymentBillColumns"/>
+		FROM payment_bill a
+		<include refid="paymentBillJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO payment_bill(
+			id,
+			user_id,
+			price,
+			pay_channel,
+			office_id,
+			result_coin,
+			result_ticket,
+			pay_date,
+			success_date,
+			issuccess,
+			error_msg,
+			create_date,
+			update_date,
+			del_flag
+		) VALUES (
+			#{id},
+			#{user.id},
+			#{price},
+			#{payChannel},
+			#{office.id},
+			#{resultCoin},
+			#{resultTicket},
+			#{payDate},
+			#{successDate},
+			#{issuccess},
+			#{errorMsg},
+			#{createDate},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE payment_bill SET 	
+			user_id = #{user.id},
+			price = #{price},
+			pay_channel = #{payChannel},
+			office_id = #{office.id},
+			result_coin = #{resultCoin},
+			result_ticket = #{resultTicket},
+			pay_date = #{payDate},
+			success_date = #{successDate},
+			issuccess = #{issuccess},
+			error_msg = #{errorMsg},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM payment_bill
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE payment_bill SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="PaymentBill" statementType="STATEMENT">
+		select * FROM payment_bill  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

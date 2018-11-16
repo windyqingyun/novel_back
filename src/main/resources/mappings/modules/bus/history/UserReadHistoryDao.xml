@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.bus.history.dao.UserReadHistoryDao">
+    
+	<sql id="userReadHistoryColumns">
+		a.id AS "id",
+		a.fodder_id AS "fodderId",
+		a.book_id AS "bookId",
+		a.chapter AS "chapter",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="userReadHistoryJoins">
+	</sql>
+	
+    
+	<select id="get" resultType="UserReadHistory" >
+		SELECT 
+			<include refid="userReadHistoryColumns"/>
+		FROM user_read_history a
+		<include refid="userReadHistoryJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="UserReadHistory" >
+		SELECT 
+			<include refid="userReadHistoryColumns"/>
+		FROM user_read_history a
+		<include refid="userReadHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="fodderId != null and fodderId != ''">
+				AND a.fodder_id = #{fodderId}
+			</if>
+			<if test="bookId != null and bookId != ''">
+				AND a.book_id = #{bookId}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="UserReadHistory" >
+		SELECT 
+			<include refid="userReadHistoryColumns"/>
+		FROM user_read_history a
+		<include refid="userReadHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO user_read_history(
+			id,
+			fodder_id,
+			book_id,
+			chapter,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{fodderId},
+			#{bookId},
+			#{chapter},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE user_read_history SET 	
+			fodder_id = #{fodderId},
+			book_id = #{bookId},
+			chapter = #{chapter},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM user_read_history
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE user_read_history SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="UserReadHistory" statementType="STATEMENT">
+		select * FROM user_read_history  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

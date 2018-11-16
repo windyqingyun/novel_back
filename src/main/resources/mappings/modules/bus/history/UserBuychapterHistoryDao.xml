@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.bus.history.dao.UserBuychapterHistoryDao">
+    
+	<sql id="userBuychapterHistoryColumns">
+		a.id AS "id",
+		a.book_id AS "book.id",
+		b.name as "book.name",
+		b.office_id as "book.office.id",
+		a.chapter AS "chapter",
+		a.originalprice AS "originalprice",
+		a.discount AS "discount",
+		a.pay_coin AS "payCoin",
+		a.pay_ticket AS "payTicket",
+		a.bulkbuychapter_history_id AS "bulkbuychapterHistoryId",
+		a.fodder_id AS "fodder.id",
+		f.title as "fodder.title",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="userBuychapterHistoryJoins">
+		left join book b on b.id = a.book_id
+		left join fodder f on f.id = a.fodder_id
+	</sql>
+	
+    
+	<select id="get" resultType="UserBuychapterHistory" >
+		SELECT 
+			<include refid="userBuychapterHistoryColumns"/>
+		FROM user_buyChapter_history a
+		<include refid="userBuychapterHistoryJoins"/>
+		WHERE a.id = #{id} 
+	</select>
+	
+	
+	<select id="findList" resultType="UserBuychapterHistory" >
+		SELECT 
+			<include refid="userBuychapterHistoryColumns"/>
+		FROM user_buyChapter_history a
+		<include refid="userBuychapterHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="book != null and book.id != null and book.id != ''">
+				AND a.book_id = #{book.id}
+			</if>
+			<if test="book != null and book.name != null and book.name != ''">
+				AND b.name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{book.name}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{book.name}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{book.name},'%')</if>
+			</if>
+			<if test="chapter != null and chapter != ''">
+				AND a.chapter = #{chapter}
+			</if>
+			<if test="bulkbuychapterHistoryId != null and bulkbuychapterHistoryId != ''">
+				AND a.bulkbuychapter_history_id = #{bulkbuychapterHistoryId}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="UserBuychapterHistory" >
+		SELECT 
+			<include refid="userBuychapterHistoryColumns"/>
+		FROM user_buyChapter_history a
+		<include refid="userBuychapterHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 已过时 -->
+	<select id="countRevenueByBook" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select 
+			sum(a.pay_coin) as "sumCoin",
+			sum(a.pay_ticket) as "sumTicket",
+			a.book_id as "book.id",
+			b.name as "book.name",
+			b.office_id as "office.id",
+			o.name as "office.name"
+		 from user_buyChapter_history a 
+			left join book b on b.id = a.book_id
+			left join sys_office o on o.id = b.office_id
+			where a.del_flag = '0'
+				<if test="office != null and office.id != null and office.id != ''">
+					and b.office_id = #{office.id}
+				</if>
+				<if test="book != null and book.name != null and book.name != ''">
+					and b.name  LIKE 
+						<if test="dbName == 'oracle'">'%'||#{book.name}||'%'</if>
+						<if test="dbName == 'mssql'">'%'+#{book.name}+'%'</if>
+						<if test="dbName == 'mysql'">concat('%',#{book.name},'%')</if>
+				</if>
+				<if test="beginDate != null">
+					<![CDATA[ AND a.create_date >= #{beginDate} ]]>
+				</if>
+				<if test="endDate != null">
+					<![CDATA[ AND a.create_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+				</if>
+			 GROUP BY a.book_id
+	</select>
+	
+	<select id="countRevenueByBookPlus" resultType="com.jeeplus.modules.bus.dto.StatisticsDto">
+		select 
+			sum(a.pay_coin) as "sumCoin",
+			sum(a.pay_ticket) as "sumTicket",
+			a.book_id as "book.id",
+			b.name as "book.name",
+			b.office_id as "office.id",
+			o.name as "office.name"
+		from user_buyChapter_history a 
+			left join book b on b.id = a.book_id
+			left join sys_office o on o.id = b.office_id
+		where a.del_flag = '0'
+		<if test="book != null and book.name != null and book.name != ''">
+			and b.name LIKE 
+			<if test="dbName == 'oracle'">'%'||#{book.name}||'%'</if>
+			<if test="dbName == 'mssql'">'%'+#{book.name}+'%'</if>
+			<if test="dbName == 'mysql'">concat('%',#{book.name},'%')</if>
+		</if>
+		<choose>
+           <when test="office != null and office.id != null and office.id != ''">
+				and b.office_id = #{office.id}
+           </when>
+           <when test="channelOffice != null and channelOffice.id != null and channelOffice.id != ''">
+				and a.pay_origin = #{channelOffice.id} 
+           </when>
+           <otherwise>
+           </otherwise>
+       </choose>
+		<if test="originOffice != null and originOffice.id != null and originOffice.id != ''">
+			and a.pay_origin = #{originOffice.id} 
+		</if>
+		<if test="providerOffice != null and providerOffice.id != null and providerOffice.id != ''">
+			and b.office_id = #{providerOffice.id}
+		</if>
+		<if test="beginDate != null">
+			<![CDATA[ AND a.create_date >= #{beginDate} ]]>
+		</if>
+		<if test="endDate != null">
+			<![CDATA[ AND a.create_date < DATE_ADD(#{endDate},INTERVAL 1 DAY)  ]]>
+		</if>
+	 	GROUP BY a.book_id
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO user_buychapter_history(
+			id,
+			book_id,
+			chapter,
+			originalprice,
+			discount,
+			pay_coin,
+			pay_ticket,
+			bulkbuychapter_history_id,
+			fodder_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{book.id},
+			#{chapter},
+			#{originalprice},
+			#{discount},
+			#{payCoin},
+			#{payTicket},
+			#{bulkbuychapterHistoryId},
+			#{fodder.id},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE user_buychapter_history SET 	
+			book_id = #{book.id},
+			chapter = #{chapter},
+			originalprice = #{originalprice},
+			discount = #{discount},
+			pay_coin = #{payCoin},
+			pay_ticket = #{payTicket},
+			bulkbuychapter_history_id = #{bulkbuychapterHistoryId},
+			fodder_id = #{fodder.id},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM user_buyChapter_history
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE user_buyChapter_history SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="UserBuychapterHistory" statementType="STATEMENT">
+		select * FROM user_buyChapter_history  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>
